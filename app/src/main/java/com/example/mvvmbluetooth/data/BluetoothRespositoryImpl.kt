@@ -1,5 +1,6 @@
 package com.example.mvvmbluetooth.data
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
@@ -24,6 +25,7 @@ import androidx.core.content.ContextCompat.registerReceiver
 
 
 
+@SuppressLint("MissingPermission")
 class BluetoothRespositoryImpl(
     private val context: Context
 ) :BluetoothRepository {
@@ -104,14 +106,25 @@ class BluetoothRespositoryImpl(
     }
 
 // 0 in flags means there is no specific flags being set
+
     override fun startdiscovery() {
+
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         registerReceiver(context,foundeviceReceiver,filter,0)
+
+        updatePairedDevices()
+
+    if(hasPermission(android.Manifest.permission.BLUETOOTH_SCAN)){
+        bluetoothAdapter?.startDiscovery()
+    }
+
 
     }
 
     override fun stopdiscovery() {
-        TODO("Not yet implemented")
+        if(hasPermission(android.Manifest.permission.BLUETOOTH_SCAN)){
+            bluetoothAdapter?.cancelDiscovery()
+        }
     }
 
 //    If you're unable to find the unregisterReceiver function in your class,

@@ -1,7 +1,10 @@
 package com.example.mvvmbluetooth.presentation.components
 
+import android.bluetooth.BluetoothDevice
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -22,11 +25,13 @@ fun DeviceScreen(state:BluetoothUiState,
         .fillMaxSize()
     ) {
 
-        DevicesList(state.scannedDevices,
+        DevicesList(
+            state.scannedDevices,
             state.pairedDevices,
-            Modifier
+            modifer= Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
+            onClick={ }
             )
 
         Row(modifier = Modifier
@@ -51,6 +56,7 @@ fun DeviceScreen(state:BluetoothUiState,
 fun DevicesList(
     scannedDevices: List<BluetoothModule>,
     pairedDevices: List<BluetoothModule>,
+    onClick:(BluetoothModule)->Unit,
     modifer: Modifier
 ) {
    LazyColumn(modifier = modifer){
@@ -61,5 +67,35 @@ fun DevicesList(
                modifier = Modifier.padding(16.dp)
            )
        }
+
+       items(pairedDevices){device->
+           Text(
+               text = device.name ?: "No name",
+               modifier = Modifier.fillMaxWidth()
+                   .padding(16.dp)
+                   .clickable { onClick(device) }
+           )
+
+       }
+
+       item {
+           Text(text = "ScannedDevice",
+               fontSize = 24.sp,
+               fontWeight = FontWeight.Bold,
+               modifier = Modifier.padding(16.dp)
+           )
+       }
+
+       items(scannedDevices){device->
+           Text(
+               text = device.name ?: "No name",
+               modifier = Modifier.fillMaxWidth()
+                   .padding(16.dp)
+                   .clickable { onClick(device) }
+           )
+
+       }
+
+
    }
 }

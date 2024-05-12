@@ -18,7 +18,7 @@ class BluetoothReceiver(
 
     override fun onReceive(context: Context, intent: Intent) {
 
-        when(intent.action) {
+        when(intent?.action) {
             BluetoothDevice.ACTION_FOUND -> {
                 val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
 

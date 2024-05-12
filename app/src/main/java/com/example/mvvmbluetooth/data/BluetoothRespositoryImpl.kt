@@ -1,5 +1,6 @@
 package com.example.mvvmbluetooth.data
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -9,11 +10,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.ContextCompat.registerReceiver
-import com.example.mvvmbluetooth.Manifest
 import com.example.mvvmbluetooth.data.mapper.toBluetoothDevice
 import com.example.mvvmbluetooth.domain.BluetoothModule
 import com.example.mvvmbluetooth.domain.BluetoothRepository
@@ -29,10 +31,6 @@ import androidx.core.content.ContextCompat.registerReceiver
 class BluetoothRespositoryImpl(
     private val context: Context
 ) :BluetoothRepository {
-
-    companion object {
-        private const val REQUEST_ENABLE_BT = 1
-    }
 
     private val bluetoothManager by lazy {
         context.getSystemService(BluetoothManager::class.java)
@@ -71,21 +69,10 @@ class BluetoothRespositoryImpl(
     }
 
     private fun updatePairedDevices() {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+            Log.i("UpdatePairedDevice","Nopermission")
             return
         }
-
         // first it maps i.e for every object the particular operation is to be performed here every bluetooth device contains
 //        name and adress differently so we convert that into single bluetoothobject  and  here also represent after mapping we want to perform
 //        particular operation as well here we update _pairedDevices
@@ -109,22 +96,30 @@ class BluetoothRespositoryImpl(
 
     override fun startdiscovery() {
 
+        if(!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+            Log.i("StartDiscovery","Nopermission")
+
+            return
+        }
+
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-        registerReceiver(context,foundeviceReceiver,filter,0)
+        context.registerReceiver(foundeviceReceiver,filter)
 
         updatePairedDevices()
 
-    if(hasPermission(android.Manifest.permission.BLUETOOTH_SCAN)){
         bluetoothAdapter?.startDiscovery()
-    }
+
 
 
     }
 
     override fun stopdiscovery() {
-        if(hasPermission(android.Manifest.permission.BLUETOOTH_SCAN)){
-            bluetoothAdapter?.cancelDiscovery()
+        if(!hasPermission(Manifest.permission.BLUETOOTH_SCAN)){
+            Log.i("Stop Discovery","Nopermission")
+
+            return
         }
+        bluetoothAdapter?.cancelDiscovery()
     }
 
 //    If you're unable to find the unregisterReceiver function in your class,

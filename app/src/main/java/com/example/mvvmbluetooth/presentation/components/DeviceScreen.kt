@@ -1,6 +1,7 @@
 package com.example.mvvmbluetooth.presentation.components
 
 import android.bluetooth.BluetoothDevice
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,10 +25,11 @@ fun DeviceScreen(state:BluetoothUiState,
     Column(modifier = Modifier
         .fillMaxSize()
     ) {
+        Log.i(state.scannedDevices.toString(),"kdfkjhjkhkjd")
 
         DevicesList(
-            state.scannedDevices,
-            state.pairedDevices,
+            scannedDevices = state.scannedDevices,
+            pairedDevices = state.pairedDevices,
             modifer= Modifier
                 .fillMaxWidth()
                 .weight(1f),
@@ -70,7 +72,7 @@ fun DevicesList(
 
        items(pairedDevices){device->
            Text(
-               text = device.name ?: "No name",
+               text = device.name ?: "(No name)",
                modifier = Modifier.fillMaxWidth()
                    .padding(16.dp)
                    .clickable { onClick(device) }
@@ -93,6 +95,8 @@ fun DevicesList(
                    .padding(16.dp)
                    .clickable { onClick(device) }
            )
+           Log.i("jgsjhd","hsjkzhg")
+           Log.i(device.name.toString(),device.name.toString());
 
        }
 

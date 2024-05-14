@@ -5,6 +5,8 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -24,7 +26,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import androidx.core.content.ContextCompat.registerReceiver
-
+import com.example.mvvmbluetooth.domain.ConnectionResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onCompletion
+import java.io.IOException
+import java.util.UUID
 
 
 @SuppressLint("MissingPermission")
@@ -61,6 +70,11 @@ class BluetoothRespositoryImpl(
         }
 
     }
+
+
+    private var bluetoothServerSocket: BluetoothServerSocket? =null
+    private var bluetoothClientSocket:BluetoothSocket?=null
+
 
 
 
@@ -113,6 +127,9 @@ class BluetoothRespositoryImpl(
 
     }
 
+
+
+
     override fun stopdiscovery() {
         if(!hasPermission(Manifest.permission.BLUETOOTH_SCAN)){
             Log.i("Stop Discovery","Nopermission")
@@ -122,6 +139,69 @@ class BluetoothRespositoryImpl(
         bluetoothAdapter?.cancelDiscovery()
     }
 
+    override fun startBluetoothServer(): Flow<ConnectionResult> {
+        return flow{
+            if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)){
+                throw SecurityException("No Permission for the Bluetooth Connect")
+            }
+
+            bluetoothServerSocket=bluetoothAdapter?.
+                listenUsingInsecureRfcommWithServiceRecord("chat_servie", UUID.fromString(UUID_NO))
+
+            var shouldLoop= true
+            while(shouldLoop){
+                val bluetoothClientSocket :BluetoothSocket?=try {
+
+                    bluetoothServerSocket?.accept()
+
+                }catch (e:IOException){
+
+                    shouldLoop=false
+                    bluetoothServerSocket?.close()
+                    null
+                }
+            }
+            emit(ConnectionResult.ConnectionEstablished)
+            bluetoothClientSocket?.let {
+                bluetoothServerSocket?.close()
+            }
+        }.onCompletion {
+            closeConnection()
+        }.flowOn(Dispatchers.IO)
+    }
+
+    override fun connectToDevice(device: BluetoothModule): Flow<ConnectionResult> {
+
+        return flow{
+            bluetoothClientSocket=bluetoothAdapter?.getRemoteDevice(device.address)
+                ?.createRfcommSocketToServiceRecord(UUID.fromString(UUID_NO))
+
+            stopdiscovery()
+
+            bluetoothClientSocket.let {socket->
+                try {
+                    socket?.connect()
+                    emit(ConnectionResult.ConnectionEstablished)
+                }catch (e:IOException){
+                    socket?.close()
+                    bluetoothClientSocket=null
+                    emit(ConnectionResult.Error("Connection was Interrupted"))
+                }
+
+            }
+
+        }.onCompletion {
+            closeConnection()
+        }.flowOn(Dispatchers.IO)
+    }
+
+    override fun closeConnection() {
+        bluetoothServerSocket?.close()
+        bluetoothClientSocket?.close()
+        bluetoothServerSocket=null
+        bluetoothClientSocket=null
+    }
+
 //    If you're unable to find the unregisterReceiver function in your class,
 //    it's likely because you're trying to call it on an instance of a class that does not have this function defined.
 //In Android, the unregisterReceiver function is typically called on a Context object,
@@ -129,6 +209,11 @@ class BluetoothRespositoryImpl(
 
     override fun release() {
         context.unregisterReceiver(foundeviceReceiver)
+        closeConnection()
+    }
+
+    companion object{
+        const val UUID_NO="ef37ab44-a09a-4f3c-a332-f184ad978250"
     }
 }
 
